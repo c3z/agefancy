@@ -1,79 +1,88 @@
-# AGEFANCY — osobista maszyna szyfrowa
+# AGEFANCY — a personal cipher machine
 
-Brutalistyczna, w 100% client-side'owa maszyna szyfrowa w przeglądarce.
-Fork [agewasm](https://github.com/MarinX/agewasm) (Marin Basic) — prawdziwa
-kryptografia [age](https://github.com/FiloSottile/age) opakowana w interfejs
-inspirowany Enigmą.
+A brutalist, 100% client-side cipher machine that runs in the browser.
+Fork of [agewasm](https://github.com/MarinX/agewasm) (Marin Basic) — real
+[age](https://github.com/FiloSottile/age) cryptography wrapped in an
+Enigma-inspired interface. UI in Polish by default, switchable to English.
 
-## Co robi
+Live: **https://agefancy.vercel.app**
 
-- **Klucz z nastaw, nie z pliku.** Fraza w stylu xkcd — 4 losowe słowa,
-  domyślnie polskie (lista diceware-pl po czyszczeniu, 6858 słów, ~51 bitów)
-  albo angielskie (EFF large, 7776 słów, ~52 bity) — plus 4 śruby nastawcze o
-  przełożeniu 1–F (jak pierścienie Enigmy). `scrypt(fraza, salt=śruby)`
-  deterministycznie wyprowadza klucz prywatny X25519 — te same nastawy dają
-  ten sam klucz na każdym urządzeniu, niczego nie trzeba zapisywać. Polskie
-  ogonki są składane do ASCII przed derivacją („żółw” ≡ „zolw”), więc frazę
-  można dyktować przez telefon.
-- **Szyfrogram jak depesza.** Binarny output age (bez stałego nagłówka
-  formatu) kodowany base32 i cięty w klasyczne bloki po 5 znaków:
-  `HE2U4 MRYNR IUQY2 …` — wklejasz w WhatsAppa, SMS-a, na kartkę pocztową.
-- **Zero serwera.** Cała kryptografia to Go skompilowane do WebAssembly,
-  fonty bundlowane lokalnie — strona nie wykonuje żadnych zapytań
-  zewnętrznych. Działa offline.
-- **Prawdziwy szyfr, jasne granice.** age = X25519 + ChaCha20-Poly1305;
-  Enigmą jest tu tylko interfejs. Świadome granice designu: klucz jest
-  deterministyczny i długowieczny (brak forward secrecy — wyciek nastaw
-  odczytuje też stare depesze), szyfr nie uwierzytelnia nadawcy (to robi
-  kanał, którym wysyłasz), długość wiadomości pozostaje widoczna.
+## What it does
 
-## Jak używać we dwoje
+- **Keys from settings, not from files.** An xkcd-style phrase — 4 random
+  words, Polish by default (a cleaned diceware-pl list, 6,858 words,
+  ~51 bits) or English (EFF large, 7,776 words, ~52 bits) — plus 4 setting
+  dials with positions 1–F (like Enigma rings). `scrypt(phrase, salt=dials)`
+  deterministically derives an X25519 private key: the same settings produce
+  the same key on every device, nothing needs to be stored. Polish
+  diacritics are folded to ASCII before derivation ("żółw" ≡ "zolw"), so a
+  phrase survives being dictated over the phone.
+- **Ciphertext like a telegram.** Binary age output (minus the constant
+  format header) is base32-encoded and cut into classic 5-character blocks:
+  `HE2U4 MRYNR IUQY2 …` — paste it into WhatsApp, an SMS, or a postcard.
+- **Zero server.** All cryptography is Go compiled to WebAssembly; fonts are
+  bundled locally — the page makes no external requests. A strict CSP and
+  security headers ship via `vercel.json`.
+- **A real cipher with honest limits.** age = X25519 + ChaCha20-Poly1305;
+  only the interface is an Enigma. Deliberate design boundaries: the key is
+  deterministic and long-lived (no forward secrecy — leaked settings also
+  decrypt past telegrams), the cipher does not authenticate the sender
+  (your transport does), and message length remains visible.
 
-1. Wylosuj frazę, ustaw śruby. Przekaż nastawy drugiej stronie bezpiecznym
-   kanałem (osobiście, na ucho) — nigdy tym, którym poślesz szyfrogram.
-2. Oboje zestrajacie maszynę na te same nastawy → identyczny klucz.
-3. Szyfrujesz (UŻYJ MOJEGO), wysyłasz bloki czym chcesz.
-4. Druga strona wkleja bloki i czyta.
+## How two people use it
 
-Wariant asymetryczny: każdy losuje własną frazę, wymieniacie się kluczami
-publicznymi (`age1…` — wolno wysłać jawnie) i szyfrujecie do klucza adresata.
+1. Roll a phrase, set the dials. Hand the settings to the other side over a
+   safe channel (in person, whispered) — never the channel you'll send the
+   telegram through.
+2. Both tune the machine to the same settings → identical keys.
+3. Encrypt (USE MINE) and send the blocks however you like.
+4. The other side pastes the blocks and reads.
 
-## Budowanie
+Asymmetric variant: each side rolls its own phrase, you exchange public keys
+(`age1…` — safe to send openly) and encrypt to the recipient's key.
 
-Wymagane: [Go](https://go.dev/), [pnpm](https://pnpm.io/).
+## Building
+
+Requires [Go](https://go.dev/) and [pnpm](https://pnpm.io/).
 
 ```bash
 make build      # wasm + vite → dist/
-pnpm run dev    # dev-serwer z live-reload (nie przebudowuje WASM)
-make build-wasm # sam WASM po zmianach w *.go
+pnpm run dev    # dev server with live reload (does not rebuild the WASM)
+make build-wasm # WASM only, after changes to *.go
 ```
 
-Statyczny `dist/` wrzucasz na dowolny hosting (produkcja stoi na Vercelu).
+The static `dist/` goes on any hosting (production runs on Vercel,
+`make deploy`).
 
-## Architektura
+## Architecture
 
-| Warstwa | Co |
+| Layer | What |
 | --- | --- |
-| `derive.go` | scrypt (N=2^16, r=8, p=1) → 32 bajty → bech32 `AGE-SECRET-KEY-` → tożsamość age |
-| `encrypt.go` / `decrypt.go` | oryginalne API agewasm (`encryptBinary`/`decryptBinary`) |
-| `internal/bech32` | kopia z `filippo.io/age/internal/bech32` (BSD) |
-| `src/main.js` | rotory, losowanie frazy (wordlist PL/EN, rejection sampling), base32 ⇄ bloki po 5, strip/prepend nagłówka age |
-| `src/style.css` | brutalizm: papier + tusz + czerwień stempla, IBM Plex Mono + Archivo Black |
+| `derive.go` | scrypt (N=2^16, r=8, p=1) → 32 bytes → bech32 `AGE-SECRET-KEY-` → age identity |
+| `encrypt.go` / `decrypt.go` | original agewasm API (`encryptBinary`/`decryptBinary`) |
+| `internal/bech32` | copy of `filippo.io/age/internal/bech32` (BSD) |
+| `src/main.js` | dials, phrase rolling (PL/EN wordlists, rejection sampling), base32 ⇄ blocks of 5, age header strip/prepend, i18n overlay |
+| `src/i18n.js` | English UI dictionary (Polish is the source of truth in the markup) |
+| `src/style.css` | brutalism: paper + ink + stamp red, IBM Plex Mono + Archivo Black |
 
-Sól KDF jest wersjonowana (`agefancy/v1|rotors:XXXX`) — zmiana parametrów
-scrypt lub formatu soli to nowa wersja i niekompatybilne klucze.
+The KDF salt is versioned (`agefancy/v1|rotors:XXXX`). The passphrase
+normalization (lowercase, whitespace collapse, Polish-diacritic folding) is
+part of the same v1 contract — changing scrypt parameters, the salt format,
+or the normalization breaks previously derived keys.
 
-## Uczciwa ocena bezpieczeństwa
+## Honest security assessment
 
-Fraza + śruby to jedyny sekret. Losowa fraza z generatora (~52 bity) + losowe
-śruby (~15,6 bita; LOSUJ FRAZĘ przestawia je razem z frazą) + memory-hard
-scrypt = realnie nie do zgadnięcia. Fraza wymyślona przez człowieka ("ala ma
-kota") = zabawka. Czego to narzędzie NIE daje: forward secrecy (klucz jest
-wieczny — kompromitacja nastaw odczytuje całą historię), uwierzytelnienia
-nadawcy, ukrycia długości wiadomości. Do flirtu na WhatsAppie aż nadto; do
-tajemnic zawodowych bierz komunikator z ratchetem (Signal), nie frazę.
+The phrase + dials are the only secret. A generator-rolled phrase (~52 bits)
+plus random dials (~15.6 bits; ROLL PHRASE spins them together) plus
+memory-hard scrypt = realistically unguessable. A human-invented phrase
+("correct horse") = a toy. What this tool does NOT provide: forward secrecy
+(the key is permanent — compromised settings decrypt the full history),
+sender authentication, or length hiding. For flirting on WhatsApp it is more
+than enough; for professional secrets use a ratcheting messenger (Signal),
+not a phrase.
 
-## Licencja
+## License
 
-MIT. Oryginalny agewasm © Marin Basic ([marin-basic.com](https://marin-basic.com)),
-modyfikacje agefancy © c3z. `internal/bech32` na licencji z nagłówka pliku.
+MIT. Original agewasm © Marin Basic ([marin-basic.com](https://marin-basic.com)),
+agefancy modifications © c3z. `internal/bech32` under the license in its
+file header.

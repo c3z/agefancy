@@ -119,6 +119,14 @@ a:hover {
   mask-size: 4px 4px;
 }
 
+.masthead-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  flex: none;
+}
+
 .lede {
   margin: 26px 0 18px;
   font-size: 15px;

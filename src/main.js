@@ -10,22 +10,51 @@ import "../vendor/wasm_exec.js";
 import ageWasmUrl from "../vendor/age.wasm?url";
 import { WORDS as WORDS_EN } from "./wordlist-en.js";
 import { WORDS as WORDS_PL } from "./wordlist-pl.js";
+import { EN_HTML, EN_PLACEHOLDER, MSG } from "./i18n.js";
+
+// ---------- UI language ----------
+// Polish lives in the markup; we snapshot it at startup and overlay English
+// from the dictionary. Language never enters the crypto.
+
+const I18N_NODES = [...document.querySelectorAll("[data-i18n]")];
+const PL_HTML = new Map(I18N_NODES.map((el) => [el, el.innerHTML]));
+const PH_NODES = [...document.querySelectorAll("[data-i18n-ph]")];
+const PL_PLACEHOLDER = new Map(PH_NODES.map((el) => [el, el.placeholder]));
+
+let uiLang = localStorage.getItem("agefancy-lang") === "en" ? "en" : "pl";
+
+function msg(key, ...args) {
+  const v = MSG[uiLang][key];
+  return typeof v === "function" ? v(...args) : v;
+}
 
 // ---------- WASM boot ----------
 
 let wasmReady = false;
+let wasmError = "";
 const wasmStatus = document.getElementById("wasmStatus");
+
+function renderWasmStatus() {
+  if (wasmError) {
+    wasmStatus.textContent = msg("wasmFail") + wasmError;
+  } else if (wasmReady) {
+    wasmStatus.textContent = msg("wasmReady");
+  } else {
+    wasmStatus.textContent = msg("wasmLoading");
+  }
+}
 
 const go = new Go();
 WebAssembly.instantiateStreaming(fetch(ageWasmUrl), go.importObject)
   .then((result) => {
     go.run(result.instance);
     wasmReady = true;
-    wasmStatus.textContent = "MECHANIZM ZAŁADOWANY — GOTOWY DO PRACY";
     wasmStatus.classList.add("ready");
+    renderWasmStatus();
   })
   .catch((err) => {
-    wasmStatus.textContent = "AWARIA MECHANIZMU: " + err;
+    wasmError = String(err);
+    renderWasmStatus();
   });
 
 // ---------- base32 telegram blocks ----------
@@ -83,7 +112,7 @@ function bytesToBlocks(bytes) {
 function blocksToBytes(text) {
   const clean = text.toUpperCase().replace(/[^A-Z2-7]/g, "");
   if (clean.length === 0) {
-    throw new Error("pusty szyfrogram");
+    throw new Error(msg("emptyCipher"));
   }
   let bits = 0;
   let value = 0;
@@ -202,15 +231,30 @@ document.getElementById("passphrase").addEventListener("input", machineDetuned);
 // ---------- machine state ----------
 
 let identity = null; // { privateKey, publicKey }
+let machineState = "off"; // "off" | "busy" | "on"
+let lastTuneSec = "";
 
 const lamp = document.getElementById("machineLamp");
 const keyPanel = document.getElementById("keyPanel");
 const useOwnKey = document.getElementById("useOwnKey");
 
+function renderLamp() {
+  if (machineState === "on") {
+    lamp.textContent = msg("lampOn", lastTuneSec);
+    lamp.className = "lamp lamp-on";
+  } else if (machineState === "busy") {
+    lamp.textContent = msg("lampBusy");
+    lamp.className = "lamp lamp-busy";
+  } else {
+    lamp.textContent = msg("lampOff");
+    lamp.className = "lamp lamp-off";
+  }
+}
+
 function machineDetuned() {
   identity = null;
-  lamp.textContent = "NIE ZESTROJONA";
-  lamp.className = "lamp lamp-off";
+  machineState = "off";
+  renderLamp();
   keyPanel.hidden = true;
   useOwnKey.disabled = true;
   // The panel is hidden but its fields would keep the old key material —
@@ -240,27 +284,62 @@ document.getElementById("clearAll").addEventListener("click", () => {
 
 function requireWasm() {
   if (!wasmReady) {
-    showError("Mechanizm jeszcze się ładuje — chwila.");
+    showError(msg("errWasm"));
     return false;
   }
   return true;
 }
+
+// ---------- UI language switch ----------
+
+const uiLangButtons = {
+  pl: document.getElementById("uiPl"),
+  en: document.getElementById("uiEn"),
+};
+
+function setUiLang(lang) {
+  uiLang = lang;
+  localStorage.setItem("agefancy-lang", lang);
+  document.documentElement.lang = lang;
+  document.title = msg("title");
+  for (const el of I18N_NODES) {
+    el.innerHTML =
+      lang === "pl"
+        ? PL_HTML.get(el)
+        : (EN_HTML[el.dataset.i18n] ?? PL_HTML.get(el));
+  }
+  for (const el of PH_NODES) {
+    el.placeholder =
+      lang === "pl"
+        ? PL_PLACEHOLDER.get(el)
+        : (EN_PLACEHOLDER[el.dataset.i18nPh] ?? PL_PLACEHOLDER.get(el));
+  }
+  for (const [key, btn] of Object.entries(uiLangButtons)) {
+    btn.classList.toggle("active", key === lang);
+    btn.setAttribute("aria-pressed", key === lang);
+  }
+  setLang(lang); // sensible default: UI language also picks the wordlist
+  renderLamp();
+  renderWasmStatus();
+}
+
+uiLangButtons.pl.addEventListener("click", () => setUiLang("pl"));
+uiLangButtons.en.addEventListener("click", () => setUiLang("en"));
+if (uiLang === "en") setUiLang("en");
 
 document.getElementById("tune").addEventListener("click", () => {
   hideError();
   if (!requireWasm()) return;
   const phrase = document.getElementById("passphrase").value.trim();
   if (!phrase) {
-    return showError(
-      "Pusta fraza. Wciśnij LOSUJ FRAZĘ albo wpisz umówione słowa.",
-    );
+    return showError(msg("errEmptyPhrase"));
   }
   const tuneBtn = document.getElementById("tune");
   const tuneStatus = document.getElementById("tuneStatus");
   tuneBtn.disabled = true;
   tuneStatus.hidden = false;
-  lamp.textContent = "FREZOWANIE…";
-  lamp.className = "lamp lamp-busy";
+  machineState = "busy";
+  renderLamp();
 
   // scrypt is heavy and synchronous — let the UI paint first.
   setTimeout(() => {
@@ -271,15 +350,16 @@ document.getElementById("tune").addEventListener("click", () => {
     tuneStatus.hidden = true;
     if (result.error) {
       machineDetuned();
-      return showError("Błąd frezowania klucza: " + result.error);
+      return showError(msg("errDerive", result.error));
     }
     identity = result;
     document.getElementById("pubkey").value = identity.publicKey;
     document.getElementById("privkey").value = identity.privateKey;
     keyPanel.hidden = false;
     useOwnKey.disabled = false;
-    lamp.textContent = `ZESTROJONA (${(ms / 1000).toFixed(1)}s)`;
-    lamp.className = "lamp lamp-on";
+    machineState = "on";
+    lastTuneSec = (ms / 1000).toFixed(1);
+    renderLamp();
   }, 60);
 });
 
@@ -297,24 +377,21 @@ document.getElementById("encryptBtn").addEventListener("click", () => {
   const recipient = document.getElementById("recipient").value.trim();
   const message = document.getElementById("plaintext").value;
   if (!recipient) {
-    return showError(
-      "Brak klucza adresata. Zestrój maszynę i wciśnij UŻYJ MOJEGO albo wklej klucz age1… od adresata.",
-    );
+    return showError(msg("errNoRecipient"));
   }
   if (!message) {
-    return showError("Pusta depesza — nie ma czego szyfrować.");
+    return showError(msg("errEmptyMsg"));
   }
   const bytes = new TextEncoder().encode(message);
   const result = encryptBinary(recipient, bytes);
   if (typeof result === "string") {
-    return showError("Błąd szyfrowania: " + result);
+    return showError(msg("errEncrypt", result));
   }
   const blocks = bytesToBlocks(stripAgeHeader(result));
   document.getElementById("cipherOut").value = blocks;
   document.getElementById("cipherPanel").hidden = false;
   const groups = blocks.split(/\s+/).length;
-  document.getElementById("cipherMeta").textContent =
-    `${groups} grup po 5 znaków`;
+  document.getElementById("cipherMeta").textContent = msg("cipherMeta", groups);
 });
 
 // ---------- decrypt ----------
@@ -323,15 +400,13 @@ document.getElementById("decryptBtn").addEventListener("click", () => {
   hideError();
   if (!requireWasm()) return;
   if (!identity) {
-    return showError(
-      "Maszyna nie jest zestrojona. Ustaw frazę i śruby w stacji 01, wciśnij ZESTRÓJ MASZYNĘ.",
-    );
+    return showError(msg("errNotTuned"));
   }
   let bytes;
   try {
     bytes = blocksToBytes(document.getElementById("cipherIn").value);
   } catch (e) {
-    return showError("Błąd odczytu bloków: " + e.message);
+    return showError(msg("errBlocks", e.message));
   }
   // Header was stripped during encoding; try with it first, raw as fallback
   // (so telegrams from stock age tools decode too).
@@ -340,11 +415,7 @@ document.getElementById("decryptBtn").addEventListener("click", () => {
     result = decryptBinary(identity.privateKey, bytes);
   }
   if (typeof result === "string") {
-    return showError(
-      "Nie da się odszyfrować. Sprawdź nastawy (fraza + śruby muszą być dokładnie te, do których szyfrowano) i czy bloki wklejone w całości. [" +
-        result +
-        "]",
-    );
+    return showError(msg("errDecrypt", result));
   }
   document.getElementById("plainOut").value = new TextDecoder().decode(result);
   document.getElementById("plainPanel").hidden = false;
@@ -359,7 +430,7 @@ function wireCopy(btnId, sourceId) {
     if (!text) return;
     await navigator.clipboard.writeText(text);
     const old = btn.textContent;
-    btn.textContent = "SKOPIOWANO ✓";
+    btn.textContent = msg("copied");
     setTimeout(() => (btn.textContent = old), 1400);
   });
 }
