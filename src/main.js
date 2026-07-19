@@ -158,20 +158,27 @@ document.querySelectorAll(".rotor").forEach((rotor) => {
   });
 });
 
-rollRotorsBtn.addEventListener("click", () => {
+function rollRotors() {
   for (let i = 0; i < 4; i++) {
     rotorValues[i] = randomInt(ROTOR_POSITIONS.length);
     renderRotor(i);
   }
+}
+
+rollRotorsBtn.addEventListener("click", () => {
+  rollRotors();
   machineDetuned();
 });
 
+// Rolling the phrase rolls the rotors too — otherwise everyone leaves them
+// at 1-1-1-1 and the advertised rotor entropy is fiction.
 document.getElementById("rollPhrase").addEventListener("click", () => {
   const words = [];
   for (let i = 0; i < 4; i++) {
     words.push(WORDS[randomInt(WORDS.length)]);
   }
   document.getElementById("passphrase").value = words.join(" ");
+  rollRotors();
   machineDetuned();
 });
 
@@ -191,7 +198,30 @@ function machineDetuned() {
   lamp.className = "lamp lamp-off";
   keyPanel.hidden = true;
   useOwnKey.disabled = true;
+  // The panel is hidden but its fields would keep the old key material —
+  // don't leave derived secrets lying around in the DOM.
+  document.getElementById("pubkey").value = "";
+  document.getElementById("privkey").value = "";
 }
+
+document.getElementById("clearAll").addEventListener("click", () => {
+  for (const id of [
+    "passphrase",
+    "recipient",
+    "plaintext",
+    "cipherOut",
+    "cipherIn",
+    "plainOut",
+  ]) {
+    document.getElementById(id).value = "";
+  }
+  rotorValues.fill(0);
+  for (let i = 0; i < 4; i++) renderRotor(i);
+  document.getElementById("cipherPanel").hidden = true;
+  document.getElementById("plainPanel").hidden = true;
+  hideError();
+  machineDetuned();
+});
 
 function requireWasm() {
   if (!wasmReady) {

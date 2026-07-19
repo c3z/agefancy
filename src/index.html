@@ -81,8 +81,8 @@
           <button id="rollPhrase" class="btn" type="button">LOSUJ FRAZĘ</button>
         </div>
         <p class="hint hint-small">
-          Cztery losowe słowa. Nie wymyślaj własnych „ala ma kota” — maszyna
-          losuje lepiej niż człowiek.
+          Cztery losowe słowa — losowanie przestawia też śruby. Nie wymyślaj
+          własnych „ala ma kota” — maszyna losuje lepiej niż człowiek.
         </p>
 
         <label class="field-label">ŚRUBY NASTAWCZE — PRZEŁOŻENIE 1–F</label>
@@ -211,6 +211,10 @@
       </div>
     </section>
 
+    <button id="clearAll" class="btn btn-wipe" type="button">
+      SPAL DEPESZĘ — WYCZYŚĆ WSZYSTKIE POLA I KLUCZ
+    </button>
+
     <div id="errorBox" class="error-box" hidden></div>
 
     <!-- ============ INSTRUKCJA ============ -->
@@ -287,9 +291,18 @@
           </li>
           <li>
             <strong>Higiena.</strong> Fraza jest kluczem — kto ją zna (i zna
-            śruby), czyta wszystko. Nie wpisuj nastaw na cudzych komputerach.
-            Zmiana nastaw = nowy klucz; stare szyfrogramy czyta się starymi
-            nastawami.
+            śruby), czyta wszystko. Nie wpisuj nastaw na cudzych komputerach, a
+            po pracy wciśnij SPAL DEPESZĘ. Zmiana nastaw = nowy klucz; stare
+            szyfrogramy czyta się starymi nastawami.
+          </li>
+          <li>
+            <strong>Granice.</strong> Nastawy to klucz na zawsze — kto je
+            pozna, odczyta także wszystkie <em>stare</em> depesze (nie ma tu
+            forward secrecy jak w Signalu). Szyfr gwarantuje, że treści nikt
+            nie zmienił, ale nie dowodzi, kto nadał — poprawną depeszę ułoży
+            każdy, kto zna klucz publiczny adresata. Widać też długość
+            wiadomości. Do flirtu — aż nadto; do tajemnic zawodowych używaj
+            komunikatora z prawdziwą wymianą kluczy.
           </li>
         </ul>
       </div>

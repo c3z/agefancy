@@ -18,8 +18,11 @@ inspirowany Enigmą.
 - **Zero serwera.** Cała kryptografia to Go skompilowane do WebAssembly,
   fonty bundlowane lokalnie — strona nie wykonuje żadnych zapytań
   zewnętrznych. Działa offline.
-- **Szyfr bez kompromisów.** age = X25519 + ChaCha20-Poly1305. Enigmą jest
-  tu tylko interfejs; pod maską współczesna kryptografia.
+- **Prawdziwy szyfr, jasne granice.** age = X25519 + ChaCha20-Poly1305;
+  Enigmą jest tu tylko interfejs. Świadome granice designu: klucz jest
+  deterministyczny i długowieczny (brak forward secrecy — wyciek nastaw
+  odczytuje też stare depesze), szyfr nie uwierzytelnia nadawcy (to robi
+  kanał, którym wysyłasz), długość wiadomości pozostaje widoczna.
 
 ## Jak używać we dwoje
 
@@ -59,11 +62,13 @@ scrypt lub formatu soli to nowa wersja i niekompatybilne klucze.
 
 ## Uczciwa ocena bezpieczeństwa
 
-Fraza + śruby to jedyny sekret. Losowa fraza z generatora (~52 bity) + śruby
-(~15,6 bita) + memory-hard scrypt = realnie nie do zgadnięcia. Fraza
-wymyślona przez człowieka ("ala ma kota") = zabawka. Do flirtu na WhatsAppie
-i tak jest to o rzędy wielkości za dużo; do tajemnic państwowych używa się
-kluczy losowych, nie fraz.
+Fraza + śruby to jedyny sekret. Losowa fraza z generatora (~52 bity) + losowe
+śruby (~15,6 bita; LOSUJ FRAZĘ przestawia je razem z frazą) + memory-hard
+scrypt = realnie nie do zgadnięcia. Fraza wymyślona przez człowieka ("ala ma
+kota") = zabawka. Czego to narzędzie NIE daje: forward secrecy (klucz jest
+wieczny — kompromitacja nastaw odczytuje całą historię), uwierzytelnienia
+nadawcy, ukrycia długości wiadomości. Do flirtu na WhatsAppie aż nadto; do
+tajemnic zawodowych bierz komunikator z ratchetem (Signal), nie frazę.
 
 ## Licencja
 

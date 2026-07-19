@@ -433,6 +433,19 @@ input[readonly] {
   flex-wrap: wrap;
 }
 
+.btn-wipe {
+  display: block;
+  width: 100%;
+  margin: 0 0 42px;
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--paper);
+}
+.btn-wipe:hover:not(:disabled) {
+  background: var(--stamp);
+  border-style: solid;
+}
+
 .error-box {
   border: var(--border);
   border-color: var(--stamp);
