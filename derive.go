@@ -65,8 +65,19 @@ func DeriveX25519Identity(this js.Value, args []js.Value) interface{} {
 	return output
 }
 
-// normalizePassphrase makes derivation forgiving about case and spacing:
-// "Key  Dog GREEN beret" and "key dog green beret" yield the same key.
+// polishFold strips Polish diacritics so a phrase dictated out loud survives
+// being typed without them: "żółw" and "zolw" are the same word. Runs after
+// ToLower. ASCII input is untouched, so keys derived from English phrases
+// are unaffected.
+var polishFold = strings.NewReplacer(
+	"ą", "a", "ć", "c", "ę", "e", "ł", "l", "ń", "n",
+	"ó", "o", "ś", "s", "ź", "z", "ż", "z",
+)
+
+// normalizePassphrase makes derivation forgiving about case, spacing and
+// Polish diacritics: "Key  Dog GREEN beret" == "key dog green beret",
+// "Żółw Gęślą" == "zolw gesla".
 func normalizePassphrase(s string) string {
-	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
+	s = polishFold.Replace(strings.ToLower(s))
+	return strings.Join(strings.Fields(s), " ")
 }

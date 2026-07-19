@@ -8,7 +8,8 @@ import "./style.css";
 
 import "../vendor/wasm_exec.js";
 import ageWasmUrl from "../vendor/age.wasm?url";
-import { WORDS } from "./wordlist.js";
+import { WORDS as WORDS_EN } from "./wordlist-en.js";
+import { WORDS as WORDS_PL } from "./wordlist-pl.js";
 
 // ---------- WASM boot ----------
 
@@ -170,12 +171,26 @@ rollRotorsBtn.addEventListener("click", () => {
   machineDetuned();
 });
 
+// Language only affects the phrase generator — the key is derived from the
+// literal words, so PL/EN never enters the crypto.
+let wordlist = WORDS_PL;
+const langButtons = { pl: document.getElementById("langPl"), en: document.getElementById("langEn") };
+function setLang(lang) {
+  wordlist = lang === "pl" ? WORDS_PL : WORDS_EN;
+  for (const [key, btn] of Object.entries(langButtons)) {
+    btn.classList.toggle("active", key === lang);
+    btn.setAttribute("aria-pressed", key === lang);
+  }
+}
+langButtons.pl.addEventListener("click", () => setLang("pl"));
+langButtons.en.addEventListener("click", () => setLang("en"));
+
 // Rolling the phrase rolls the rotors too — otherwise everyone leaves them
 // at 1-1-1-1 and the advertised rotor entropy is fiction.
 document.getElementById("rollPhrase").addEventListener("click", () => {
   const words = [];
   for (let i = 0; i < 4; i++) {
-    words.push(WORDS[randomInt(WORDS.length)]);
+    words.push(wordlist[randomInt(wordlist.length)]);
   }
   document.getElementById("passphrase").value = words.join(" ");
   rollRotors();

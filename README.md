@@ -7,11 +7,14 @@ inspirowany Enigmą.
 
 ## Co robi
 
-- **Klucz z nastaw, nie z pliku.** Fraza w stylu xkcd (4 losowe słowa z listy
-  EFF, ~52 bity entropii) + 4 śruby nastawcze o przełożeniu 1–F (jak
-  pierścienie Enigmy). `scrypt(fraza, salt=śruby)` deterministycznie
-  wyprowadza klucz prywatny X25519 — te same nastawy dają ten sam klucz na
-  każdym urządzeniu, niczego nie trzeba zapisywać.
+- **Klucz z nastaw, nie z pliku.** Fraza w stylu xkcd — 4 losowe słowa,
+  domyślnie polskie (lista diceware-pl po czyszczeniu, 6858 słów, ~51 bitów)
+  albo angielskie (EFF large, 7776 słów, ~52 bity) — plus 4 śruby nastawcze o
+  przełożeniu 1–F (jak pierścienie Enigmy). `scrypt(fraza, salt=śruby)`
+  deterministycznie wyprowadza klucz prywatny X25519 — te same nastawy dają
+  ten sam klucz na każdym urządzeniu, niczego nie trzeba zapisywać. Polskie
+  ogonki są składane do ASCII przed derivacją („żółw” ≡ „zolw”), więc frazę
+  można dyktować przez telefon.
 - **Szyfrogram jak depesza.** Binarny output age (bez stałego nagłówka
   formatu) kodowany base32 i cięty w klasyczne bloki po 5 znaków:
   `HE2U4 MRYNR IUQY2 …` — wklejasz w WhatsAppa, SMS-a, na kartkę pocztową.
@@ -54,7 +57,7 @@ Statyczny `dist/` wrzucasz na dowolny hosting (produkcja stoi na Vercelu).
 | `derive.go` | scrypt (N=2^16, r=8, p=1) → 32 bajty → bech32 `AGE-SECRET-KEY-` → tożsamość age |
 | `encrypt.go` / `decrypt.go` | oryginalne API agewasm (`encryptBinary`/`decryptBinary`) |
 | `internal/bech32` | kopia z `filippo.io/age/internal/bech32` (BSD) |
-| `src/main.js` | rotory, losowanie frazy (EFF large wordlist, rejection sampling), base32 ⇄ bloki po 5, strip/prepend nagłówka age |
+| `src/main.js` | rotory, losowanie frazy (wordlist PL/EN, rejection sampling), base32 ⇄ bloki po 5, strip/prepend nagłówka age |
 | `src/style.css` | brutalizm: papier + tusz + czerwień stempla, IBM Plex Mono + Archivo Black |
 
 Sól KDF jest wersjonowana (`agefancy/v1|rotors:XXXX`) — zmiana parametrów

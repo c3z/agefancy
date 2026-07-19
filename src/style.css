@@ -281,6 +281,35 @@ input[readonly] {
   align-self: center;
 }
 
+.lang-toggle {
+  display: flex;
+  flex: none;
+  border: var(--border);
+}
+.lang-btn {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0;
+  border-radius: 0;
+  padding: 0 12px;
+  cursor: pointer;
+}
+.lang-btn + .lang-btn {
+  border-left: var(--border);
+}
+.lang-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+.lang-btn:hover:not(.active) {
+  background: var(--stamp);
+  color: var(--paper);
+}
+
 /* ---------- rotors ---------- */
 .rotor-bank {
   display: flex;
