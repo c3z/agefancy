@@ -1,452 +1,380 @@
 <!doctype html>
-<html>
+<html lang="pl">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
-      title="Age Tool - Online Age Key Generator Encryption Decryption Tool"
-    />
-    <meta
       name="description"
-      content="A simple and secure online client-side Age key generator, encryption and decryption tool."
+      content="AGEFANCY — osobista maszyna szyfrowa w przeglądarce. Klucz z frazy i czterech śrub, szyfrogram w blokach po pięć liter. Zero serwera, wszystko lokalnie."
     />
-    <meta name="author" content="Marin Basic (marin-basic.com)" />
-
-    <title>
-      Age Tool - Online Age Key Generator Encryption Decryption Tool
-    </title>
-
+    <title>AGEFANCY — osobista maszyna szyfrowa</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2314120e'/%3E%3Crect x='10' y='16' width='44' height='32' fill='%23d5301b'/%3E%3Ctext x='32' y='43' font-family='monospace' font-size='28' font-weight='bold' fill='%23ece7d8' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E"
+    />
     <script type="module" src="./main.js"></script>
   </head>
 
   <body spellcheck="false">
-    <main>
-      <section class="text-center container">
-        <div class="row py-lg-5">
-          <div class="col-lg-8 col-md-8 mx-auto">
-            <h1 class="fw-light">Age Tool</h1>
-            <p class="text-muted">
-              A simple and secure online client-side Age key generator,
-              encryption and decryption tool.
-            </p>
-            <p></p>
-          </div>
+    <div class="tape" aria-hidden="true">
+      <div class="tape-inner">
+        <span
+          >ZERO SERWERA &nbsp;///&nbsp; NIC NIE WYCHODZI Z TWOJEGO URZĄDZENIA
+          &nbsp;///&nbsp; SZYFROWANIE W PRZEGLĄDARCE &nbsp;///&nbsp; DZIAŁA
+          OFFLINE &nbsp;///&nbsp; KOD OTWARTY &nbsp;///&nbsp;
+        </span>
+        <span
+          >ZERO SERWERA &nbsp;///&nbsp; NIC NIE WYCHODZI Z TWOJEGO URZĄDZENIA
+          &nbsp;///&nbsp; SZYFROWANIE W PRZEGLĄDARCE &nbsp;///&nbsp; DZIAŁA
+          OFFLINE &nbsp;///&nbsp; KOD OTWARTY &nbsp;///&nbsp;
+        </span>
+      </div>
+    </div>
+
+    <header class="masthead">
+      <div class="masthead-title">
+        <h1>AGEFANCY</h1>
+        <p class="subtitle">OSOBISTA MASZYNA SZYFROWA</p>
+      </div>
+      <div class="stamp" title="Cały kod wykonuje się lokalnie w przeglądarce">
+        100%<br />CLIENT-SIDE
+      </div>
+    </header>
+
+    <p class="lede">
+      Szyfrujesz tu, odszyfrowuje ktoś, kto zna <strong>frazę</strong> i
+      ustawienie <strong>śrub</strong>. Żadnych kont, żadnej chmury, żadnego
+      wysyłania danych — strona działa w całości na twoim urządzeniu (możesz
+      wyłączyć internet i sprawdzić). Pod maską prawdziwa kryptografia:
+      <a href="https://age-encryption.org" target="_blank" rel="noopener"
+        >age</a
+      >
+      (X25519 + ChaCha20-Poly1305).
+    </p>
+
+    <div id="wasmStatus" class="wasm-status">ŁADOWANIE MECHANIZMU…</div>
+
+    <!-- ============ 01 MASZYNA ============ -->
+    <section class="station" id="station-machine">
+      <div class="station-head">
+        <span class="station-no">01</span>
+        <h2>NASTAWY MASZYNY</h2>
+        <span id="machineLamp" class="lamp lamp-off">NIE ZESTROJONA</span>
+      </div>
+
+      <div class="station-body">
+        <p class="hint">
+          Fraza + śruby = twój klucz. Zawsze ten sam, na każdym urządzeniu. Nic
+          nie musisz zapisywać ani „zakładać konta” — wystarczy zapamiętać
+          nastawy.
+        </p>
+
+        <label class="field-label" for="passphrase">FRAZA KLUCZOWA</label>
+        <div class="phrase-row">
+          <input
+            id="passphrase"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="np. maple crayon usher pantry"
+          />
+          <button id="rollPhrase" class="btn" type="button">LOSUJ FRAZĘ</button>
         </div>
-      </section>
+        <p class="hint hint-small">
+          Cztery losowe słowa. Nie wymyślaj własnych „ala ma kota” — maszyna
+          losuje lepiej niż człowiek.
+        </p>
 
-      <div class="container">
-        <div class="row">
-          <div class="col">
-            <ul class="nav nav-tabs" id="myTab" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link active"
-                  id="keys-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#keys-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="keys-tab-pane"
-                  aria-selected="true"
-                >
-                  Keys
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link"
-                  id="encrypt-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#encrypt-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="encrypt-tab-pane"
-                  aria-selected="false"
-                >
-                  Encrypt
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link"
-                  id="encrypt-binary-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#encrypt-binary-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="encrypt-binary-tab-pane"
-                  aria-selected="false"
-                >
-                  Encrypt Binary
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link"
-                  id="decrypt-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#decrypt-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="decrypt-tab-pane"
-                  aria-selected="false"
-                >
-                  Decrypt
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link"
-                  id="decrypt-binary-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#decrypt-binary-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="decrypt-binary-tab-pane"
-                  aria-selected="false"
-                >
-                  Decrypt Binary
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button
-                  class="nav-link"
-                  id="about-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#about-tab-pane"
-                  type="button"
-                  role="tab"
-                  aria-controls="about-tab-pane"
-                  aria-selected="false"
-                >
-                  About
-                </button>
-              </li>
-            </ul>
-            <div class="tab-content" id="myTabContent">
-              <div
-                class="tab-pane show active"
-                id="keys-tab-pane"
-                role="tabpanel"
-                aria-labelledby="keys-tab"
-                tabindex="0"
-              >
-                <form id="generateKeysForm">
-                  <div class="card mb-3">
-                    <div class="card-header">Private key</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="privkey"
-                        placeholder="Your private key will be generated here."
-                        id="privkey"
-                        readonly="readonly"
-                        onfocus="this.select()"
-                      ></textarea>
-                    </div>
-                  </div>
+        <label class="field-label">ŚRUBY NASTAWCZE — PRZEŁOŻENIE 1–F</label>
+        <div class="rotor-bank">
+          <div class="rotor" data-rotor="0">
+            <button class="rotor-up" type="button" aria-label="śruba I w górę">
+              ▲
+            </button>
+            <div class="rotor-window"><span class="rotor-value">1</span></div>
+            <button class="rotor-down" type="button" aria-label="śruba I w dół">
+              ▼
+            </button>
+            <div class="rotor-label">I</div>
+          </div>
+          <div class="rotor" data-rotor="1">
+            <button class="rotor-up" type="button" aria-label="śruba II w górę">
+              ▲
+            </button>
+            <div class="rotor-window"><span class="rotor-value">1</span></div>
+            <button
+              class="rotor-down"
+              type="button"
+              aria-label="śruba II w dół"
+            >
+              ▼
+            </button>
+            <div class="rotor-label">II</div>
+          </div>
+          <div class="rotor" data-rotor="2">
+            <button
+              class="rotor-up"
+              type="button"
+              aria-label="śruba III w górę"
+            >
+              ▲
+            </button>
+            <div class="rotor-window"><span class="rotor-value">1</span></div>
+            <button
+              class="rotor-down"
+              type="button"
+              aria-label="śruba III w dół"
+            >
+              ▼
+            </button>
+            <div class="rotor-label">III</div>
+          </div>
+          <div class="rotor" data-rotor="3">
+            <button class="rotor-up" type="button" aria-label="śruba IV w górę">
+              ▲
+            </button>
+            <div class="rotor-window"><span class="rotor-value">1</span></div>
+            <button
+              class="rotor-down"
+              type="button"
+              aria-label="śruba IV w dół"
+            >
+              ▼
+            </button>
+            <div class="rotor-label">IV</div>
+          </div>
+          <button id="rollRotors" class="btn btn-ghost" type="button">
+            LOSUJ<br />ŚRUBY
+          </button>
+        </div>
+        <p class="hint hint-small">
+          Jak pierścienie w Enigmie: każda śruba ma 15 położeń (1–F). Inne
+          ustawienie = zupełnie inny klucz.
+        </p>
 
-                  <div class="card mb-3">
-                    <div class="card-header">Public key <a id="pubkey-share" title="Shareable link (supports multiple comma-separated keys)" class="text-decoration-none" target="_blank" hidden="true">&nbsp;&#x1F517;</a></div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="pubkey"
-                        placeholder="Your public key will be generated here."
-                        id="pubkey"
-                        readonly="readonly"
-                        onfocus="this.select()"
-                      ></textarea>
-                    </div>
-                  </div>
+        <button id="tune" class="btn btn-primary btn-big" type="button">
+          ZESTRÓJ MASZYNĘ
+        </button>
+        <div id="tuneStatus" class="tune-status" hidden>
+          FREZOWANIE KLUCZA<span class="cursor">█</span>
+        </div>
 
-                  <div id="errorKeys"></div>
+        <div id="keyPanel" class="key-panel" hidden>
+          <label class="field-label" for="pubkey"
+            >TWÓJ KLUCZ PUBLICZNY — MOŻNA POKAZYWAĆ KAŻDEMU</label
+          >
+          <div class="output-row">
+            <textarea id="pubkey" rows="2" readonly></textarea>
+            <button id="copyPubkey" class="btn" type="button">KOPIUJ</button>
+          </div>
+          <details>
+            <summary>klucz prywatny (nie pokazuj nikomu)</summary>
+            <textarea id="privkey" rows="2" readonly></textarea>
+            <p class="hint hint-small">
+              Nie musisz go nigdzie zapisywać — maszyna wyfrezuje go ponownie z
+              frazy i śrub.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
 
-                  <div class="d-grid m-2">
-                    <button type="submit" class="btn btn-primary">
-                      Generate Keys
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div
-                class="tab-pane"
-                id="encrypt-tab-pane"
-                role="tabpanel"
-                aria-labelledby="encrypt-tab"
-                tabindex="0"
-              >
-                <form id="encryptForm">
-                  <div class="card mb-3">
-                    <div class="card-header">Public keys</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="recipients"
-                        placeholder="Recipient key or keys one per line"
-                        id="recipients"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
+    <!-- ============ 02 SZYFROWANIE ============ -->
+    <section class="station" id="station-encrypt">
+      <div class="station-head">
+        <span class="station-no">02</span>
+        <h2>SZYFROWANIE</h2>
+      </div>
+      <div class="station-body">
+        <label class="field-label" for="recipient"
+          >KLUCZ PUBLICZNY ADRESATA</label
+        >
+        <div class="phrase-row">
+          <input
+            id="recipient"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="age1…"
+          />
+          <button id="useOwnKey" class="btn" type="button" disabled>
+            UŻYJ MOJEGO
+          </button>
+        </div>
+        <p class="hint hint-small">
+          Macie wspólną frazę i śruby? Wciśnij UŻYJ MOJEGO — po zestrojeniu
+          takich samych nastaw druga strona ma ten sam klucz i odczyta depeszę.
+        </p>
 
-                  <div class="card mb-3">
-                    <div class="card-header">Message</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="message"
-                        placeholder="Message to encrypt"
-                        id="message"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
+        <label class="field-label" for="plaintext">TREŚĆ DEPESZY</label>
+        <textarea
+          id="plaintext"
+          rows="4"
+          placeholder="wpisz wiadomość…"
+        ></textarea>
 
-                  <div class="card mb-3">
-                    <div class="card-header">Output</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="5"
-                        name="encryptedOutput"
-                        placeholder="Encrypted output will be generated here"
-                        id="encryptedOutput"
-                        readonly
-                        onfocus="this.select()"
-                      ></textarea>
-                    </div>
-                  </div>
+        <button id="encryptBtn" class="btn btn-primary btn-big" type="button">
+          SZYFRUJ
+        </button>
 
-                  <div id="errorEncrypt"></div>
-
-                  <div class="d-grid m-2">
-                    <button type="submit" class="btn btn-primary">
-                      Encrypt
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div
-                class="tab-pane"
-                id="encrypt-binary-tab-pane"
-                role="tabpanel"
-                aria-labelledby="encrypt-binary-tab"
-                tabindex="0"
-              >
-                <form id="encryptBinaryForm">
-                  <div class="card mb-3">
-                    <div class="card-header">Public keys</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="recipients"
-                        placeholder="Recipient key or keys one per line"
-                        id="recipients-binary"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Files</div>
-                    <div class="card-body">
-                      <input
-                        type="file"
-                        class="form-control file"
-                        id="filesEncrypt"
-                        required
-                        multiple
-                      />
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Output</div>
-                    <div class="card-body">
-                      <p>The encrypted files will be downloaded</p>
-                    </div>
-                  </div>
-
-                  <div id="errorEncryptBinary"></div>
-
-                  <div class="d-grid m-2">
-                    <button type="submit" class="btn btn-primary">
-                      <span
-                        class="spinner-border spinner-border-sm hide"
-                        role="status"
-                        aria-hidden="true"
-                        hidden
-                      ></span>
-                      <span class="sr-only">Encrypt Binary</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div
-                class="tab-pane"
-                id="decrypt-tab-pane"
-                role="tabpanel"
-                aria-labelledby="decrypt-tab"
-                tabindex="0"
-              >
-                <form id="decryptForm">
-                  <div class="card mb-3">
-                    <div class="card-header">Private keys</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="identities"
-                        placeholder="Identitiy key or keys one per line"
-                        id="identities"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Encrypted Text</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="5"
-                        name="encryptedText"
-                        placeholder="Paste here encrypted text"
-                        id="encryptedText"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Output</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="5"
-                        name="decryptedOutput"
-                        placeholder="Decrypted output will be generated here"
-                        id="decryptedOutput"
-                        readonly
-                        onfocus="this.select()"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div id="errorDecrypt"></div>
-
-                  <div class="d-grid m-2">
-                    <button type="submit" class="btn btn-primary">
-                      Decrypt
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div
-                class="tab-pane"
-                id="decrypt-binary-tab-pane"
-                role="tabpanel"
-                aria-labelledby="decrypt-binary-tab"
-                tabindex="0"
-              >
-                <form id="decryptBinaryForm">
-                  <div class="card mb-3">
-                    <div class="card-header">Private keys</div>
-                    <div class="card-body">
-                      <textarea
-                        class="form-control message"
-                        rows="2"
-                        name="identities-binary"
-                        placeholder="Identitiy key or keys one per line"
-                        id="identities-binary"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Encrypted Files</div>
-                    <div class="card-body">
-                      <input
-                        type="file"
-                        multiple
-                        class="form-control message"
-                        id="filesDecrypt"
-                        required
-                        multiple
-                      />
-                    </div>
-                  </div>
-
-                  <div class="card mb-3">
-                    <div class="card-header">Output</div>
-                    <div class="card-body">
-                      <p>The decrypted files will be downloaded</p>
-                    </div>
-                  </div>
-
-                  <div id="errorDecryptBinary"></div>
-
-                  <div class="d-grid m-2">
-                    <button type="submit" class="btn btn-primary">
-                      <span
-                        class="spinner-border spinner-border-sm hide"
-                        role="status"
-                        aria-hidden="true"
-                        hidden
-                      ></span>
-                      <span class="sr-only">Decrypt Binary</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div
-                class="tab-pane"
-                id="about-tab-pane"
-                role="tabpanel"
-                aria-labelledby="about-tab"
-                tabindex="0"
-              >
-                <p class="mt-2">
-                  This site provides a simple and easy-to-use open source Age
-                  tool for people to generate new Age keys online, encrypt or
-                  decrypt messages.
-                </p>
-
-                <p>
-                  Built using Go and WebAssembly. The Go library
-                  <a href="https://github.com/FiloSottile/age" target="_blank"
-                    >Age</a
-                  >
-                  is wrapped in a WebAssembly module and all actions are done in
-                  browser.
-                </p>
-
-                <strong
-                  >There is no backend or API calls. Everything is generated on
-                  client(browser) side</strong
-                >
-
-                <p>
-                  This site is Open Source and the source code is available on
-                  <a href="https://github.com/MarinX/agewasm" target="_blank"
-                    >GitHub</a
-                  >.
-                </p>
-              </div>
-            </div>
+        <div id="cipherPanel" hidden>
+          <label class="field-label" for="cipherOut"
+            >SZYFROGRAM — BLOKI PO 5</label
+          >
+          <textarea
+            id="cipherOut"
+            class="cipher-block"
+            rows="7"
+            readonly
+          ></textarea>
+          <div class="output-actions">
+            <button id="copyCipher" class="btn" type="button">
+              KOPIUJ SZYFROGRAM
+            </button>
+            <span id="cipherMeta" class="hint hint-small"></span>
           </div>
         </div>
       </div>
-    </main>
+    </section>
+
+    <!-- ============ 03 DESZYFROWANIE ============ -->
+    <section class="station" id="station-decrypt">
+      <div class="station-head">
+        <span class="station-no">03</span>
+        <h2>DESZYFROWANIE</h2>
+      </div>
+      <div class="station-body">
+        <p class="hint">
+          Najpierw zestrój maszynę (stacja 01) na nastawy, do których
+          zaszyfrowano depeszę. Potem wklej bloki — spacje i entery bez
+          znaczenia.
+        </p>
+        <label class="field-label" for="cipherIn">SZYFROGRAM</label>
+        <textarea
+          id="cipherIn"
+          class="cipher-block"
+          rows="6"
+          placeholder="XXXXX XXXXX XXXXX …"
+        ></textarea>
+        <button id="decryptBtn" class="btn btn-primary btn-big" type="button">
+          ODSZYFRUJ
+        </button>
+        <div id="plainPanel" hidden>
+          <label class="field-label" for="plainOut">TREŚĆ ODCZYTANA</label>
+          <textarea id="plainOut" rows="4" readonly></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div id="errorBox" class="error-box" hidden></div>
+
+    <!-- ============ INSTRUKCJA ============ -->
+    <section class="station station-doc">
+      <div class="station-head">
+        <span class="station-no">§1</span>
+        <h2>INSTRUKCJA DLA DWOJGA</h2>
+      </div>
+      <div class="station-body">
+        <ol class="manual">
+          <li>
+            <strong>Umówcie się na nastawy.</strong> Wylosuj frazę, ustaw śruby.
+            Przekaż je drugiej stronie bezpiecznym kanałem — najlepiej
+            osobiście, na ucho. Nigdy tym samym kanałem, którym poślesz
+            szyfrogram.
+          </li>
+          <li>
+            <strong>Oboje zestrajacie maszynę</strong> na te same nastawy.
+            Maszyna wyfrezuje wam identyczny klucz.
+          </li>
+          <li>
+            <strong>Szyfrujesz</strong> (stacja 02, przycisk UŻYJ MOJEGO) i
+            wysyłasz bloki czym chcesz — WhatsApp, SMS, kartka pocztowa. Treść
+            zna tylko ten, kto zna nastawy.
+          </li>
+          <li>
+            <strong>Druga strona wkleja bloki</strong> w stację 03 i czyta.
+          </li>
+        </ol>
+        <p class="hint">
+          Wariant ambitny: każde z was losuje <em>własną</em> frazę i
+          wymieniacie się tylko kluczami publicznymi (te wolno wysłać jawnie).
+          Szyfrujesz do klucza adresata — odczyta wyłącznie adresat, ty już nie.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ JAK TO DZIAŁA ============ -->
+    <section class="station station-doc">
+      <div class="station-head">
+        <span class="station-no">§2</span>
+        <h2>CO SIĘ DZIEJE POD MASKĄ</h2>
+      </div>
+      <div class="station-body">
+        <ul class="manual">
+          <li>
+            <strong>Fraza + śruby → klucz.</strong> Z frazy i ustawienia śrub
+            funkcja <code>scrypt</code> (kosztowna pamięciowo, celowo powolna)
+            wyprowadza klucz prywatny X25519. Cztery losowe słowa to ~52 bity
+            entropii, śruby dodają swoje — a scrypt sprawia, że zgadywanie
+            milionów fraz na sekundę jest niewykonalne.
+          </li>
+          <li>
+            <strong>Szyfr.</strong> Prawdziwe, współczesne szyfrowanie
+            <a
+              href="https://github.com/FiloSottile/age"
+              target="_blank"
+              rel="noopener"
+              >age</a
+            >
+            — X25519 + ChaCha20-Poly1305. Żadnej kryptografii domowej roboty;
+            Enigmą jest tu tylko interfejs.
+          </li>
+          <li>
+            <strong>Bloki po 5.</strong> Zaszyfrowane bajty kodujemy base32
+            (A–Z, 2–7) i tniemy w klasyczne pięcioznakowe grupy depeszowe. To
+            tylko opakowanie — bez nastaw bloki są bezwartościowe.
+          </li>
+          <li>
+            <strong>Zero serwera.</strong> Kryptografia działa jako WebAssembly
+            (Go) w twojej przeglądarce. Strona nie wykonuje żadnych zapytań
+            sieciowych z twoimi danymi — nie ma dokąd. Sprawdź kartę „Network” w
+            devtools albo wyłącz Wi-Fi.
+          </li>
+          <li>
+            <strong>Higiena.</strong> Fraza jest kluczem — kto ją zna (i zna
+            śruby), czyta wszystko. Nie wpisuj nastaw na cudzych komputerach.
+            Zmiana nastaw = nowy klucz; stare szyfrogramy czyta się starymi
+            nastawami.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="colophon">
+      <p>
+        AGEFANCY — fork
+        <a
+          href="https://github.com/MarinX/agewasm"
+          target="_blank"
+          rel="noopener"
+          >agewasm</a
+        >
+        (Marin Basic, MIT) · szyfr
+        <a
+          href="https://github.com/FiloSottile/age"
+          target="_blank"
+          rel="noopener"
+          >age</a
+        >
+        (Filippo Valsorda) · kod:
+        <a href="https://github.com/c3z/agefancy" target="_blank" rel="noopener"
+          >github.com/c3z/agefancy</a
+        >
+      </p>
+      <p class="colophon-dedication">
+        Pamięci Rejewskiego, Różyckiego i Zygalskiego — panowie zrobili to bez
+        WebAssembly.
+      </p>
+    </footer>
   </body>
 </html>

@@ -1,4 +1,4 @@
-.PHOHY: import build-wasm npm-install build clean zip deploy-gcp help
+.PHOHY: import build-wasm npm-install build clean zip deploy help
 
 go-sources = go.mod go.sum *.go
 web-sources = package.json pnpm-lock.yaml vite.config.js src/*
@@ -74,16 +74,16 @@ build: $(build)
 clean:
 	rm -rf vendor/ dist/
 
-# make zip: create a zip archive with the output static website (outputs agewasm.zip)
-zip = agewasm.zip
+# make zip: create a zip archive with the output static website (outputs agefancy.zip)
+zip = agefancy.zip
 $(zip): $(build)
 	rm -f $(zip)
 	cd dist && zip -r ../$(zip) .
 zip: $(zip)
 
-# make deploy-gcp: deploys to google cloud
-deploy-gcp: build
-	gcloud app deploy
+# make deploy: deploys dist/ to Vercel production
+deploy: build
+	vercel deploy --prod --cwd dist
 
 # make help: print this help page
 help:
