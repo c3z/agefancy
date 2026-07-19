@@ -115,6 +115,22 @@ const ROTOR_POSITIONS = "123456789ABCDEF"; // 1..F, 15 positions, jak w zamówie
 
 const rotorValues = [0, 0, 0, 0]; // indices into ROTOR_POSITIONS
 
+// The four rotor widgets differ only by index — generate them instead of
+// repeating the markup in HTML (the app is inert without JS anyway).
+const rotorBank = document.querySelector(".rotor-bank");
+const rollRotorsBtn = document.getElementById("rollRotors");
+["I", "II", "III", "IV"].forEach((label, i) => {
+  const rotor = document.createElement("div");
+  rotor.className = "rotor";
+  rotor.dataset.rotor = i;
+  rotor.innerHTML = `
+    <button class="rotor-up" type="button" aria-label="śruba ${label} w górę">▲</button>
+    <div class="rotor-window"><span class="rotor-value">${ROTOR_POSITIONS[rotorValues[i]]}</span></div>
+    <button class="rotor-down" type="button" aria-label="śruba ${label} w dół">▼</button>
+    <div class="rotor-label">${label}</div>`;
+  rotorBank.insertBefore(rotor, rollRotorsBtn);
+});
+
 function renderRotor(i) {
   const el = document.querySelector(`.rotor[data-rotor="${i}"] .rotor-value`);
   el.textContent = ROTOR_POSITIONS[rotorValues[i]];
@@ -142,7 +158,7 @@ document.querySelectorAll(".rotor").forEach((rotor) => {
   });
 });
 
-document.getElementById("rollRotors").addEventListener("click", () => {
+rollRotorsBtn.addEventListener("click", () => {
   for (let i = 0; i < 4; i++) {
     rotorValues[i] = randomInt(ROTOR_POSITIONS.length);
     renderRotor(i);
@@ -177,11 +193,17 @@ function machineDetuned() {
   useOwnKey.disabled = true;
 }
 
+function requireWasm() {
+  if (!wasmReady) {
+    showError("Mechanizm jeszcze się ładuje — chwila.");
+    return false;
+  }
+  return true;
+}
+
 document.getElementById("tune").addEventListener("click", () => {
   hideError();
-  if (!wasmReady) {
-    return showError("Mechanizm jeszcze się ładuje — chwila.");
-  }
+  if (!requireWasm()) return;
   const phrase = document.getElementById("passphrase").value.trim();
   if (!phrase) {
     return showError(
@@ -226,9 +248,7 @@ useOwnKey.addEventListener("click", () => {
 
 document.getElementById("encryptBtn").addEventListener("click", () => {
   hideError();
-  if (!wasmReady) {
-    return showError("Mechanizm jeszcze się ładuje — chwila.");
-  }
+  if (!requireWasm()) return;
   const recipient = document.getElementById("recipient").value.trim();
   const message = document.getElementById("plaintext").value;
   if (!recipient) {
@@ -256,9 +276,7 @@ document.getElementById("encryptBtn").addEventListener("click", () => {
 
 document.getElementById("decryptBtn").addEventListener("click", () => {
   hideError();
-  if (!wasmReady) {
-    return showError("Mechanizm jeszcze się ładuje — chwila.");
-  }
+  if (!requireWasm()) return;
   if (!identity) {
     return showError(
       "Maszyna nie jest zestrojona. Ustaw frazę i śruby w stacji 01, wciśnij ZESTRÓJ MASZYNĘ.",
@@ -289,7 +307,7 @@ document.getElementById("decryptBtn").addEventListener("click", () => {
 
 // ---------- clipboard ----------
 
-function wireCopy(btnId, sourceId, label) {
+function wireCopy(btnId, sourceId) {
   const btn = document.getElementById(btnId);
   btn.addEventListener("click", async () => {
     const text = document.getElementById(sourceId).value;

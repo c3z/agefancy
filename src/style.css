@@ -8,6 +8,7 @@
   --stamp: #d5301b;
   --ok: #1c7c33;
   --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 4px 4px 0 var(--ink);
   --border: 3px solid var(--ink);
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --display: "Archivo Black", var(--mono);
@@ -237,7 +238,7 @@ input[readonly] {
   padding: 10px 16px;
   cursor: pointer;
   border-radius: 0;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.05s, box-shadow 0.05s;
   flex: none;
 }
@@ -293,7 +294,7 @@ input[readonly] {
   flex-direction: column;
   border: var(--border);
   background: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   width: 74px;
 }
 .rotor button {

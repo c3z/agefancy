@@ -54,7 +54,7 @@ func DeriveX25519Identity(this js.Value, args []js.Value) interface{} {
 		output["error"] = err.Error()
 		return output
 	}
-	identity, err := age.ParseX25519Identity(strings.ToUpper(secret))
+	identity, err := age.ParseX25519Identity(secret)
 	if err != nil {
 		output["error"] = err.Error()
 		return output
