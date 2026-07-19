@@ -82,8 +82,11 @@ $(zip): $(build)
 zip: $(zip)
 
 # make deploy: deploys dist/ to Vercel production
+# (vite --emptyOutDir wipes dist/.vercel, so relink before every deploy;
+#  agefancy.vercel.app is a manual alias — repoint it at the new deployment)
 deploy: build
-	vercel deploy --prod --cwd dist
+	cd dist && vercel link --yes --project agefancy && vercel deploy --prod --yes
+	@echo "Remember: vercel alias set <deployment-url> agefancy.vercel.app"
 
 # make help: print this help page
 help:
